@@ -17,12 +17,12 @@
   <input type="hidden" name="_method" value="patch">
   <div class="form-field">
     <label for="title">タイトル</label>
-    <input type="text" id="title" name="title" value="<%= h(@memo["title"]) %>">
+    <input type="text" id="title" name="title" value="<%= (@memo["title"]) %>">
   </div>
 
   <div class="form-field">
     <label for="details">内容</label>
-    <textarea id="details" name="details" rows="5"><%= h(@memo["details"]) %></textarea>
+    <textarea id="details" name="details" rows="5"><%= (@memo["details"]) %></textarea>
   </div>
 
   <div class="form-actions">
