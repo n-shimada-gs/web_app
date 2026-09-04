@@ -20,10 +20,21 @@
 
 ### 1. リポジトリを取得する
 
+**クローンの方法は、開発ブランチのみもしくはmainからクローンの二通りがあります。**
+
 ```bash
-git clone https://github.com/n-shimada-gs/web_app.git
+git clone -b sinatra-app https://github.com/n-shimada-gs/web_app.git
 cd web_app
 ```
+
+> `main` ブランチには タイトルだけのREADME.md のみが置かれています。アプリのコードは `sinatra-app` ブランチにあるため、`-b sinatra-app` を付けてクローンしてください。
+>
+> `main` の状態からクローンする場合は、以下でブランチを切り替えられます。
+>
+> ```bash
+> git branch -a
+> git checkout sinatra-app
+> ```
 
 ### 2. Ruby のバージョンを合わせる
 
@@ -33,7 +44,7 @@ rbenv を使用している場合、リポジトリ内の `.ruby-version` に記
 rbenv install
 ```
 
-### 3. 依存gemをインストールする
+### 3. gemをインストールする
 
 ```bash
 bundle install
