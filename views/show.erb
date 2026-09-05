@@ -1,0 +1,14 @@
+<h1><%= h(@memo["title"]) %></h1>
+
+<div class="memo-show">
+  <p><%= h(@memo["details"]) %></p>
+</div>
+
+<div class="page-actions">
+  <a class="button-link" href="/top">一覧へ戻る</a>
+  <a class="button-link" href="/top/<%= h(@memo["id"]) %>/edit">編集する</a>
+  <form action="/top/<%= h(@memo["id"]) %>" method="post">
+    <input type="hidden" name="_method" value="delete">
+    <button type="submit" class="danger-button">削除する</button>
+  </form>
+</div>
