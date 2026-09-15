@@ -2,13 +2,13 @@
 
 <p>作成したメモを一覧で表示します</p>
 <p>
-  <a class='button-link' href='/top/new'>新しいメモを追加</a>
+  <a class='button-link' href='/memos/new'>新しいメモを追加</a>
 </p>
 
 <div class='memo_list'>
   <ul>
     <% @memos.each do |memo| %>
-      <li><a href='/top/<%= h(memo['id']) %>'><%= h(memo['title']) %></a></li>
+      <li><a href='/memos/<%= h(memo['id']) %>'><%= h(memo['title']) %></a></li>
     <% end %>
   </ul>
 </div>

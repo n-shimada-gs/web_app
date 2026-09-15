@@ -23,11 +23,7 @@ def save_memos(memos)
   File.write(MEMOS_FILE, "#{JSON.pretty_generate(memos)}\n")
 end
 
-def find_memo(id)
-  load_memos.find { |memo| memo['id'] == id }
-end
-
-def find_memo_from(memos, id)
+def find_memo(memos, id)
   memos.find { |memo| memo['id'] == id }
 end
 
@@ -39,22 +35,23 @@ def memo_params
 end
 
 get '/' do
-  redirect '/top'
+  redirect '/memos'
 end
 
-get '/top' do
+get '/memos' do
   @memos = load_memos
   erb :index
 end
 
-get '/top/new' do
+get '/memos/new' do
   @memo = {}
   @errors = []
   erb :new
 end
 
-get '/top/:id/edit' do
-  @memo = find_memo(params['id'])
+get '/memos/:id/edit' do
+  memos = load_memos
+  @memo = find_memo(memos, params['id'])
   if @memo.nil?
     status 404
     return erb :not_found
@@ -64,8 +61,9 @@ get '/top/:id/edit' do
   erb :edit
 end
 
-get '/top/:id' do
-  @memo = find_memo(params['id'])
+get '/memos/:id' do
+  memos = load_memos
+  @memo = find_memo(memos, params['id'])
   if @memo.nil?
     status 404
     return erb :not_found
@@ -74,7 +72,7 @@ get '/top/:id' do
   erb :show
 end
 
-post '/top' do
+post '/memos' do
   @new_memo = memo_params
   @errors = []
 
@@ -89,35 +87,36 @@ post '/top' do
   memos << memo
   save_memos(memos)
 
-  redirect "/top/#{memo['id']}"
+  redirect "/memos/#{memo['id']}"
 end
 
-patch '/top/:id' do
+patch '/memos/:id' do
   memos = load_memos
-  memo = find_memo_from(memos, params['id'])
+  memo = find_memo(memos, params['id'])
   if memo.nil?
     status 404
     return erb :not_found
   end
 
-  @memo = memo.merge(memo_params)
+  new_values = memo_params
   @errors = []
 
-  if @memo['title'].strip.empty?
+  if new_values['title'].strip.empty?
     @errors << 'タイトルを入力してください'
+    @memo = memo.merge(new_values)
     status 422
     return erb :edit
   end
 
-  memo.merge!(@memo)
+  memo.merge!(new_values)
   save_memos(memos)
 
-  redirect "/top/#{memo['id']}"
+  redirect "/memos/#{memo['id']}"
 end
 
-delete '/top/:id' do
+delete '/memos/:id' do
   memos = load_memos
-  memo = find_memo_from(memos, params['id'])
+  memo = find_memo(memos, params['id'])
   if memo.nil?
     status 404
     return erb :not_found
@@ -126,7 +125,7 @@ delete '/top/:id' do
   memos.delete(memo)
   save_memos(memos)
 
-  redirect '/top'
+  redirect '/memos'
 end
 
 not_found do
