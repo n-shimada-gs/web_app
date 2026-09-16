@@ -16,11 +16,11 @@ helpers do
 end
 
 def load_memos
-  JSON.parse(File.read(MEMOS_FILE))
+  JSON.load_file(MEMOS_FILE)
 end
 
 def save_memos(memos)
-  File.write(MEMOS_FILE, "#{JSON.pretty_generate(memos)}\n")
+  File.write(MEMOS_FILE, "#{JSON.generate(memos)}\n")
 end
 
 def find_memo(memos, id)
@@ -132,6 +132,3 @@ not_found do
   erb :not_found
 end
 
-get '/error-example' do
-  raise '確認用のエラー'
-end
