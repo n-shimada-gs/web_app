@@ -1,0 +1,134 @@
+# frozen_string_literal: true
+
+require 'json'
+require 'rack/utils'
+require 'securerandom'
+require 'sinatra'
+
+enable :method_override
+
+MEMOS_FILE = File.join(__dir__, 'data', 'memos.json')
+
+helpers do
+  def h(value)
+    Rack::Utils.escape_html(value)
+  end
+end
+
+def load_memos
+  JSON.load_file(MEMOS_FILE)
+end
+
+def save_memos(memos)
+  File.write(MEMOS_FILE, "#{JSON.generate(memos)}\n")
+end
+
+def find_memo(memos, id)
+  memos.find { |memo| memo['id'] == id }
+end
+
+def memo_params
+  {
+    'title' => params['title'].to_s,
+    'details' => params['details'].to_s
+  }
+end
+
+get '/' do
+  redirect '/memos'
+end
+
+get '/memos' do
+  @memos = load_memos
+  erb :index
+end
+
+get '/memos/new' do
+  @memo = {}
+  @errors = []
+  erb :new
+end
+
+get '/memos/:id/edit' do
+  memos = load_memos
+  @memo = find_memo(memos, params['id'])
+  if @memo.nil?
+    status 404
+    return erb :not_found
+  end
+
+  @errors = []
+  erb :edit
+end
+
+get '/memos/:id' do
+  memos = load_memos
+  @memo = find_memo(memos, params['id'])
+  if @memo.nil?
+    status 404
+    return erb :not_found
+  end
+
+  erb :show
+end
+
+post '/memos' do
+  @new_memo = memo_params
+  @errors = []
+
+  if @new_memo['title'].strip.empty?
+    @errors << 'タイトルを入力してください'
+    status 422
+    return erb :new
+  end
+
+  memos = load_memos
+  memo = { 'id' => SecureRandom.uuid }.merge(@new_memo)
+  memos << memo
+  save_memos(memos)
+
+  redirect "/memos/#{memo['id']}"
+end
+
+patch '/memos/:id' do
+  memos = load_memos
+  memo = find_memo(memos, params['id'])
+  if memo.nil?
+    status 404
+    return erb :not_found
+  end
+
+  new_values = memo_params
+  @errors = []
+
+  if new_values['title'].strip.empty?
+    @errors << 'タイトルを入力してください'
+    @memo = memo.merge(new_values)
+    status 422
+    return erb :edit
+  end
+
+  memo.merge!(new_values)
+  save_memos(memos)
+
+  redirect "/memos/#{memo['id']}"
+end
+
+delete '/memos/:id' do
+  memos = load_memos
+  memo = find_memo(memos, params['id'])
+  if memo.nil?
+    status 404
+    return erb :not_found
+  end
+
+  memos.delete(memo)
+  save_memos(memos)
+
+  redirect '/memos'
+end
+
+not_found do
+  erb :not_found
+end
+
