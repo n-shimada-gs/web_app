@@ -1,7 +1,7 @@
 # web_app
 # メモアプリ
 
-**Webアプリケーション**プラクティス・**Sinatraを使ってWebアプリケーションの基本を理解する**の提出物です。
+**Webアプリケーション**プラクティス・**WebアプリからのDB利用**の提出物です。
 
 ## 使用技術
 
@@ -9,7 +9,8 @@
 - Sinatra "4.2.0"
 - puma "8.0.0"
 - rackup "2.3.0"
-- データ保存: JSON ファイル（`data/memo.json` ）
+- pg
+- データ保存: PostgreSQLに保存(`pg`gemでSQLを実行)
 
 ## 動作環境
 
@@ -44,19 +45,26 @@ rbenv を使用している場合、リポジトリ内の `.ruby-version` に記
 rbenv install
 ```
 
-### 3. gemをインストールする
+### 3. PostgresSQLをインストールする
+  - データベース作成
+  `createdb memoapp`
+  (または: `psql -U postgres -f db/setup.sql`)
+  - テーブル作成
+  `psql -U postgres -d memoapp -f db/schema.sql`
+
+### 4. gemをインストールする
 
 ```bash
 bundle install
 ```
 
-### 4. アプリケーションを起動する
+### 5. アプリケーションを起動する
 
 ```bash
 bundle exec ruby app.rb
 ```
 
-### 5. ブラウザでアクセスする
+### 6. ブラウザでアクセスする
 
 起動後、以下のURLにアクセスするとメモ一覧画面が表示されます。
 
@@ -70,28 +78,38 @@ http://localhost:4567
   - 既存メモ編集機能・メモ編集画面
 - 新規メモ作成画面
 
-レビューの際の動作確認用として、一つメモを残したまま提出しています。
-クローンした際のJSON ファイル（`data/memo.json` ）にデータが入っています。
-
 ## ディレクトリ構成
 
 ```
 .
 ├── app.rb              # アプリケーション本体
 ├── views/              # ERBテンプレート
-│   └── index.erb       
-│   └── layout.erb      
+│   └── index.erb
+│   └── layout.erb
 │   └── new.erb         # 新規メモ作成
 │   └── edit.erb        # 既存メモ編集
-│   └── not_found.erb   
+│   └── not_found.erb
 ├── public/
-│   └── stylesheets/     
+│   └── stylesheets/
 │       └── application.css
 ├── data/
-│   └── memos.json      # メモデータ（JSON）
+│   └── setup.sql
+│   └── schema.sql
 ├── .ruby-version
 ├── Gemfile
 ├── Gemfile.lock
 └── README.md
 ```
+
+## テーブル構成
+`memodata`テーブルにメモを1件1行で保存しています。
+
+| カラム  | 型    | 制約         |
+|---------|-------|--------------|
+| id      | uuid  | PRIMARY KEY  |
+| title   | text  | NOT NULL     |
+| details | text  | NOT NULL     |
+
+`id`はDB側の自動採番ではなく、アプリ側（Ruby）で`SecureRandom.uuid`により生成しています。
+
 **レビューのほどよろしくお願いいたします。**

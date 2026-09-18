@@ -1,30 +1,28 @@
 # frozen_string_literal: true
 
-require 'json'
+require 'pg'
 require 'rack/utils'
 require 'securerandom'
 require 'sinatra'
 
 enable :method_override
 
-MEMOS_FILE = File.join(__dir__, 'data', 'memos.json')
+DB_PARAMS = {
+  host: ENV.fetch('DB_HOST', 'localhost'),
+  user: ENV.fetch('DB_USER', 'postgres'),
+  password: ENV.fetch('DB_PASSWORD', 'postgres'),
+  dbname: ENV.fetch('DB_NAME', 'memoapp'),
+  port: ENV.fetch('DB_PORT', '5432')
+}.freeze
+
+configure do
+  set :db, PG.connect(DB_PARAMS)
+end
 
 helpers do
   def h(value)
     Rack::Utils.escape_html(value)
   end
-end
-
-def load_memos
-  JSON.load_file(MEMOS_FILE)
-end
-
-def save_memos(memos)
-  File.write(MEMOS_FILE, "#{JSON.generate(memos)}\n")
-end
-
-def find_memo(memos, id)
-  memos.find { |memo| memo['id'] == id }
 end
 
 def memo_params
@@ -39,7 +37,8 @@ get '/' do
 end
 
 get '/memos' do
-  @memos = load_memos
+  @memos = settings.db.exec('SELECT * FROM memodata').to_a
+
   erb :index
 end
 
@@ -50,8 +49,9 @@ get '/memos/new' do
 end
 
 get '/memos/:id/edit' do
-  memos = load_memos
-  @memo = find_memo(memos, params['id'])
+  result = settings.db.exec_params('SELECT * FROM memodata WHERE id = $1', [params[:id]])
+
+  @memo = result.first
   if @memo.nil?
     status 404
     return erb :not_found
@@ -62,8 +62,9 @@ get '/memos/:id/edit' do
 end
 
 get '/memos/:id' do
-  memos = load_memos
-  @memo = find_memo(memos, params['id'])
+  result = settings.db.exec_params('SELECT * FROM memodata WHERE id = $1', [params[:id]])
+
+  @memo = result.first
   if @memo.nil?
     status 404
     return erb :not_found
@@ -82,48 +83,47 @@ post '/memos' do
     return erb :new
   end
 
-  memos = load_memos
-  memo = { 'id' => SecureRandom.uuid }.merge(@new_memo)
-  memos << memo
-  save_memos(memos)
+  id = SecureRandom.uuid
 
-  redirect "/memos/#{memo['id']}"
+  settings.db.exec_params(
+    'INSERT INTO memodata (id, title, details) VALUES ($1, $2, $3)',
+    [id, @new_memo['title'], @new_memo['details']]
+  )
+
+  redirect "/memos/#{id}"
 end
 
 patch '/memos/:id' do
-  memos = load_memos
-  memo = find_memo(memos, params['id'])
-  if memo.nil?
-    status 404
-    return erb :not_found
-  end
-
-  new_values = memo_params
+  @memo = memo_params
   @errors = []
 
-  if new_values['title'].strip.empty?
+  if @memo['title'].strip.empty?
     @errors << 'タイトルを入力してください'
-    @memo = memo.merge(new_values)
     status 422
+    @memo['id'] = params[:id]
     return erb :edit
   end
 
-  memo.merge!(new_values)
-  save_memos(memos)
+  result = settings.db.exec_params(
+    'UPDATE memodata SET title = $1, details = $2 WHERE id = $3',
+    [@memo['title'], @memo['details'], params[:id]]
+  )
 
-  redirect "/memos/#{memo['id']}"
-end
-
-delete '/memos/:id' do
-  memos = load_memos
-  memo = find_memo(memos, params['id'])
-  if memo.nil?
+  if result.cmd_tuples.zero?
     status 404
     return erb :not_found
   end
 
-  memos.delete(memo)
-  save_memos(memos)
+  redirect "/memos/#{params['id']}"
+end
+
+delete '/memos/:id' do
+  result = settings.db.exec_params('DELETE FROM memodata WHERE id = $1', [params[:id]])
+
+  if result.cmd_tuples.zero?
+    status 404
+    return erb :not_found
+  end
 
   redirect '/memos'
 end
@@ -131,4 +131,3 @@ end
 not_found do
   erb :not_found
 end
-
