@@ -25,6 +25,36 @@ helpers do
   end
 end
 
+def load_memos
+  settings.db.exec('SELECT * FROM memodata').to_a
+end
+
+def find_memo(id)
+  settings.db.exec_params('SELECT * FROM memodata WHERE id = $1', [id]).first
+end
+
+def create_memo(memo)
+  id = SecureRandom.uuid
+  settings.db.exec_params(
+    'INSERT INTO memodata (id, title, details) VALUES ($1, $2, $3)',
+    [id, memo['title'], memo['details']]
+  )
+  id
+end
+
+def updata_memo(id, memo)
+  result = settings.db.exec_params(
+    'UPDATE memodata SET title = $1, details = $2 WHERE id = $3',
+    [memo['title'], memo['details'], id]
+  )
+  result.cmd_tuples.positive?
+end
+
+def delete_memo(id)
+  result = settings.db.exec_params('DELETE FROM memodata WHERE id = $1', [id])
+  result.cmd_tuples.positive?
+end
+
 def memo_params
   {
     'title' => params['title'].to_s,
@@ -37,8 +67,7 @@ get '/' do
 end
 
 get '/memos' do
-  @memos = settings.db.exec('SELECT * FROM memodata').to_a
-
+  @memos = load_memos
   erb :index
 end
 
@@ -49,9 +78,7 @@ get '/memos/new' do
 end
 
 get '/memos/:id/edit' do
-  result = settings.db.exec_params('SELECT * FROM memodata WHERE id = $1', [params[:id]])
-
-  @memo = result.first
+  @memo = find_memo(params[:id])
   if @memo.nil?
     status 404
     return erb :not_found
@@ -62,9 +89,7 @@ get '/memos/:id/edit' do
 end
 
 get '/memos/:id' do
-  result = settings.db.exec_params('SELECT * FROM memodata WHERE id = $1', [params[:id]])
-
-  @memo = result.first
+  @memo = find_memo(params[:id])
   if @memo.nil?
     status 404
     return erb :not_found
@@ -83,13 +108,7 @@ post '/memos' do
     return erb :new
   end
 
-  id = SecureRandom.uuid
-
-  settings.db.exec_params(
-    'INSERT INTO memodata (id, title, details) VALUES ($1, $2, $3)',
-    [id, @new_memo['title'], @new_memo['details']]
-  )
-
+  id = create_memo(@new_memo)
   redirect "/memos/#{id}"
 end
 
@@ -104,12 +123,7 @@ patch '/memos/:id' do
     return erb :edit
   end
 
-  result = settings.db.exec_params(
-    'UPDATE memodata SET title = $1, details = $2 WHERE id = $3',
-    [@memo['title'], @memo['details'], params[:id]]
-  )
-
-  if result.cmd_tuples.zero?
+  unless updata_memo(params[:id], @memo)
     status 404
     return erb :not_found
   end
@@ -118,9 +132,7 @@ patch '/memos/:id' do
 end
 
 delete '/memos/:id' do
-  result = settings.db.exec_params('DELETE FROM memodata WHERE id = $1', [params[:id]])
-
-  if result.cmd_tuples.zero?
+  unless delete_memo(params[:id])
     status 404
     return erb :not_found
   end

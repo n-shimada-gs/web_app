@@ -45,12 +45,12 @@ rbenv を使用している場合、リポジトリ内の `.ruby-version` に記
 rbenv install
 ```
 
-### 3. PostgresSQLをインストールする
+### 3. PostgreSQLをインストールする
   - データベース作成
   `createdb memoapp`
-  (または: `psql -U postgres -f db/setup.sql`)
+  (または: `psql -U postgres -f data/setup.sql`)
   - テーブル作成
-  `psql -U postgres -d memoapp -f db/schema.sql`
+  `psql -U postgres -d memoapp -f data/schema.sql`
 
 ### 4. gemをインストールする
 
